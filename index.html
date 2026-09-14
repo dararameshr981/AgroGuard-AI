@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#166534">
+<title>AgroGuard AI — Smart Crop Doctor</title>
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{--green:#166534;--green2:#22c55e;--bg:#f4f8f3;--card:#fff;--text:#16301e;--muted:#64756a;--danger:#b91c1c;--warn:#a16207}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--text)}
+header{background:linear-gradient(135deg,#14532d,#22c55e);color:white;padding:22px 18px 28px;border-radius:0 0 28px 28px}
+.brand{font-size:24px;font-weight:800}.tag{opacity:.9;margin-top:5px}
+main{max-width:1050px;margin:auto;padding:18px}.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:18px}
+.card{background:var(--card);border-radius:20px;padding:18px;box-shadow:0 6px 25px #164e3a12;margin-bottom:18px}
+h2,h3{margin:0 0 10px}.muted{color:var(--muted)}
+.camera{background:#102217;border-radius:18px;min-height:330px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+video{width:100%;height:330px;object-fit:cover;display:none}canvas{display:none}.placeholder{color:white;text-align:center;padding:25px}
+button,select{font:inherit;border:0;border-radius:13px;padding:12px 15px}
+button{background:var(--green);color:white;font-weight:700;cursor:pointer}.secondary{background:#e8f3ea;color:var(--green)}.danger{background:#fee2e2;color:#991b1b}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.actions button{flex:1;min-width:135px}
+input[type=file]{display:none}
+.result{display:none}.pill{display:inline-block;padding:6px 10px;border-radius:99px;background:#dcfce7;color:#166534;font-weight:700;font-size:13px}
+.risk{font-size:24px;font-weight:800;color:var(--danger)}
+.info{display:grid;grid-template-columns:1fr 1fr;gap:10px}.info div{background:#f7faf7;padding:12px;border-radius:12px}
+ul{padding-left:20px;line-height:1.7}.warning{background:#fff7ed;border-left:4px solid #f59e0b;padding:12px;border-radius:10px}
+nav{display:flex;gap:8px;overflow:auto;margin-top:14px}nav button{background:#ffffff20;white-space:nowrap}
+.dashboard{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.stat{padding:14px;background:#f7faf7;border-radius:14px}.stat b{display:block;font-size:24px}
+footer{padding:10px 18px 30px;text-align:center;color:var(--muted);font-size:12px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.dashboard{grid-template-columns:1fr 1fr}.camera,video{min-height:300px;height:300px}.info{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">🌱 AgroGuard AI</div>
+  <div class="tag">Smart Crop Doctor • Early Disease & Pest Detection</div>
+  <nav>
+    <button onclick="scrollToId('scanner')">📷 Scan Crop</button>
+    <button onclick="scrollToId('history')">📋 History</button>
+    <button onclick="scrollToId('about')">ℹ️ About</button>
+  </nav>
+</header>
+
+<main>
+<section id="scanner" class="grid">
+  <div class="card">
+    <h2>📷 AI Crop Scanner</h2>
+    <p class="muted">Use your phone camera or upload a clear crop/leaf image.</p>
+    <label for="crop">Crop</label>
+    <select id="crop" style="width:100%;margin:8px 0 12px">
+      <option>Tomato</option><option>Potato</option><option>Rice</option><option>Wheat</option>
+      <option>Maize</option><option>Cotton</option><option>Chilli</option><option>Brinjal</option>
+    </select>
+    <div class="camera">
+      <video id="video" playsinline autoplay></video>
+      <canvas id="canvas"></canvas>
+      <div id="placeholder" class="placeholder">
+        <div style="font-size:54px">🌿</div>
+        <b>Camera ready</b><br><span style="opacity:.75">Tap Start Camera to scan a plant</span>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="startBtn">📷 Start Camera</button>
+      <button id="captureBtn" class="secondary" disabled>🔍 Capture & Analyze</button>
+      <label class="secondary" style="text-align:center;cursor:pointer;flex:1;min-width:135px">
+        🖼️ Upload Image
+        <input id="fileInput" type="file" accept="image/*" capture="environment">
+      </label>
+    </div>
+    <p class="muted" style="font-size:12px">Camera access works on HTTPS or localhost and requires browser permission.</p>
+  </div>
+
+  <div class="card result" id="result">
+    <span class="pill">AI Analysis</span>
+    <h2 id="diseaseName" style="margin-top:10px">—</h2>
+    <div class="info">
+      <div><span class="muted">Crop</span><br><b id="resultCrop">—</b></div>
+      <div><span class="muted">Confidence</span><br><b id="confidence">—</b></div>
+    </div>
+    <h3 style="margin-top:16px">📊 Risk</h3>
+    <div class="risk" id="risk">—</div>
+    <p id="riskText" class="muted"></p>
+    <h3>🔍 Symptoms</h3><ul id="symptoms"></ul>
+    <h3>🧬 Cause / Spread</h3><p id="cause"></p>
+    <h3>🛡️ What to do now</h3><ul id="actionsList"></ul>
+    <h3>💊 Treatment guidance</h3>
+    <div class="warning">
+      <b>Verified-use principle:</b> pesticide recommendations must be checked against the
+      product label and applicable Indian agricultural approvals for the specific crop and disease.
+      Do not use a chemical solely because an AI model suggests it.
+    </div>
+    <p id="treatment"></p>
+    <h3>🌦️ Weather early warning</h3><p id="weather"></p>
+    <button onclick="saveResult()">💾 Save Scan</button>
+  </div>
+</section>
+
+<section class="card">
+  <h2>📊 Web Dashboard Preview</h2>
+  <div class="dashboard">
+    <div class="stat">🌾 <b id="scanCount">0</b><span class="muted">Scans</span></div>
+    <div class="stat">🦠 <b id="diseaseCount">0</b><span class="muted">Diseases found</span></div>
+    <div class="stat">🔴 <b id="highCount">0</b><span class="muted">High risk</span></div>
+    <div class="stat">👨‍🌾 <b>1</b><span class="muted">Demo farmer</span></div>
+  </div>
+</section>
+
+<section id="history" class="card">
+  <h2>📋 Scan History</h2>
+  <div id="historyList" class="muted">No scans yet.</div>
+</section>
+
+<section id="about" class="card">
+  <h2>🌱 About AgroGuard AI</h2>
+  <p>AgroGuard AI is a mobile-first software prototype for early crop disease and pest detection.
+  It combines image analysis, crop context, weather risk and verified agricultural guidance.</p>
+  <p><b>Hackathon architecture:</b> Mobile PWA → AI vision service → disease knowledge base →
+  weather service → recommendation engine → web dashboard.</p>
+</section>
+</main>
+<footer>AgroGuard AI • SIH 2026 prototype • AI output is decision support, not a substitute for an agricultural expert or product label.</footer>
+
+<script>
+const video=document.getElementById('video'), canvas=document.getElementById('canvas');
+const startBtn=document.getElementById('startBtn'), captureBtn=document.getElementById('captureBtn');
+const placeholder=document.getElementById('placeholder'), fileInput=document.getElementById('fileInput');
+let stream=null, lastAnalysis=null;
+
+const diseaseDB={
+ Tomato:{name:"Early Blight (demo)",confidence:"94%",risk:"HIGH",
+ symptoms:["Dark circular spots on older leaves","Yellowing around affected tissue","Progressive leaf damage"],
+ cause:"A fungal disease commonly associated with infected plant material and favorable environmental conditions.",
+ actions:["Remove badly affected leaves and dispose of them safely.","Keep foliage as dry as practical and improve air circulation.","Monitor nearby plants and rescan if symptoms increase."],
+ treatment:"For chemical control, use only a product whose Indian label/approved-use directions specifically list tomato and the diagnosed target. Follow the exact label dose, PPE and pre-harvest interval. The production version will retrieve this from a verified pesticide database.",
+ weather:"If weather conditions become favorable for disease development, increase monitoring frequency and follow locally recommended preventive practices."},
+ Potato:{name:"Late Blight (demo)",confidence:"91%",risk:"HIGH",
+ symptoms:["Water-soaked or dark leaf lesions","Rapid browning of foliage","Possible white growth under humid conditions"],
+ cause:"A destructive oomycete disease that can spread rapidly under favorable cool, wet conditions.",
+ actions:["Separate and monitor affected plants.","Avoid moving contaminated plant material between fields.","Seek local agricultural guidance when spread is rapid."],
+ treatment:"Use only officially approved, crop-specific fungicide options and the exact label directions. Do not guess a pesticide or dose from an AI response.",
+ weather:"Wet and cool conditions can increase concern; use the weather-risk service in the production system for location-specific alerts."},
+ Rice:{name:"Rice Leaf Blast (demo)",confidence:"89%",risk:"MEDIUM",
+ symptoms:["Spindle-shaped lesions","Gray centers with darker margins","Leaf damage that can expand"],
+ cause:"A fungal disease affected by crop variety, nitrogen management and environmental conditions.",
+ actions:["Monitor neighboring plants.","Use balanced crop nutrition and recommended field practices.","Contact an agricultural expert if symptoms spread quickly."],
+ treatment:"Chemical recommendations must be crop- and disease-specific and verified against current Indian approved-use/label information.",
+ weather:"Weather and crop-stage information should be used together with field observations for an early-warning score."}
+};
+
+function getData(crop){return diseaseDB[crop]||{name:"Possible crop disease — demo",confidence:"82%",risk:"MEDIUM",
+symptoms:["Visible leaf discoloration or spotting"],cause:"The prototype needs a trained disease model for reliable diagnosis.",
+actions:["Capture a clearer close-up image.","Check multiple leaves.","Consult an agricultural expert if symptoms persist."],
+treatment:"Production version: retrieve verified crop/disease treatment options from an authoritative database.",
+weather:"Production version: calculate location-specific weather risk."};}
+
+async function startCamera(){
+ try{
+   stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});
+   video.srcObject=stream; video.style.display="block"; placeholder.style.display="none"; captureBtn.disabled=false;
+   startBtn.textContent="📷 Camera Active";
+ }catch(e){alert("Camera permission was not granted. You can use Upload Image instead.");}
+}
+function analyze(crop, imagePreview){
+ const d=getData(crop);
+ lastAnalysis={crop,...d,time:new Date().toLocaleString()};
+ document.getElementById('result').style.display='block';
+ for(const [id,val] of [["diseaseName",d.name],["resultCrop",crop],["confidence",d.confidence],["risk",d.risk],["cause",d.cause],["treatment",d.treatment],["weather",d.weather]])
+   document.getElementById(id).textContent=val;
+ document.getElementById('riskText').textContent=d.risk==="HIGH"?"Immediate attention recommended; verify diagnosis before treatment.":"Continue monitoring and verify the diagnosis.";
+ document.getElementById('symptoms').innerHTML=d.symptoms.map(x=>`<li>${x}</li>`).join('');
+ document.getElementById('actionsList').innerHTML=d.actions.map(x=>`<li>${x}</li>`).join('');
+ document.getElementById('result').scrollIntoView({behavior:"smooth"});
+}
+startBtn.onclick=startCamera;
+captureBtn.onclick=()=>{canvas.width=video.videoWidth;canvas.height=video.videoHeight;canvas.getContext('2d').drawImage(video,0,0);analyze(document.getElementById('crop').value);};
+fileInput.onchange=e=>{if(e.target.files[0]) analyze(document.getElementById('crop').value);};
+function saveResult(){
+ if(!lastAnalysis)return;
+ const scans=JSON.parse(localStorage.getItem("agroScans")||"[]"); scans.unshift(lastAnalysis); localStorage.setItem("agroScans",JSON.stringify(scans.slice(0,30))); renderHistory();
+}
+function renderHistory(){
+ const scans=JSON.parse(localStorage.getItem("agroScans")||"[]");
+ document.getElementById('scanCount').textContent=scans.length;
+ document.getElementById('diseaseCount').textContent=new Set(scans.map(s=>s.name)).size;
+ document.getElementById('highCount').textContent=scans.filter(s=>s.risk==="HIGH").length;
+ document.getElementById('historyList').innerHTML=scans.length?scans.map(s=>`<div style="padding:12px;border-bottom:1px solid #eee"><b>${s.crop}</b> — ${s.name} <span class="pill">${s.risk}</span><br><small class="muted">${s.time} • ${s.confidence}</small></div>`).join(''):"No scans yet.";
+}
+function scrollToId(id){document.getElementById(id).scrollIntoView({behavior:"smooth"});}
+renderHistory();
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
+</script>
+</body>
+</html>

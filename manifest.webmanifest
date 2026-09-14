@@ -1,0 +1,10 @@
+{
+  "name":"AgroGuard AI",
+  "short_name":"AgroGuard",
+  "start_url":"./",
+  "display":"standalone",
+  "background_color":"#f4f8f3",
+  "theme_color":"#166534",
+  "description":"AI-powered crop disease and pest detection prototype",
+  "icons":[]
+}
